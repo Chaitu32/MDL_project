@@ -55,8 +55,8 @@ def fitness_population(population_vector):
     population_errors = get_population_errors(population_vector)
     normal_error = population_errors[:,0] * (2/3) + population_errors[:,1] *(1/3)
     population_inverse = np.reciprocal(normal_error+1)
-    storebest_10(population_vector,population_errors,population_inverse)
-    return population_inverse
+    new_population = storebest_10(population_vector,population_errors,population_inverse)
+    return population_inverse,new_population
 
 def cross_over(p_vector):
     return list()
@@ -64,19 +64,35 @@ def cross_over(p_vector):
 def mutation(p_vector):
     return list()
 
+def get_new_generation(population,p_inverse):
+    half_num = int(population.shape[0]/2)
+    new_genaration = np.zeros((half_num,population.shape[1]))
+    survived_population = population[0:half_num]
+    relative_probabilty = p_inverse[0:half_num]
+    relative_probabilty = relative_probabilty / np.sum(relative_probabilty)
+    for i in range(int(half_num/2)):
+        parents = np.random.choice(survived_population,2,replace=False,p =relative_probabilty)
+        children = cross_over(parents)
+        new_genaration[i*2] = children[0]
+        new_genaration[i*2+1] = children[1]
+    new_genaration = mutation(new_genaration)
+    population[half_num:] = new_genaration
+    
+    return population
+
+
 def storebest_10(p_v,p_e,p_per):
     index_p = np.argsort(p_per)
     p_v = p_v[index_p[::-1]]
     p_e = p_e[index_p[::-1]]
     p_per = p_per[index_p[::-1]]
-    for i in p_per:
-        print(i)
     file = open("my_outputs.txt","a")
     L = [str(p_v),str(p_e),str(p_per)]
     file.write("<--------------Start--------------->")
     file.writelines(L)
     file.write("<---------------End---------------->")
     file.close()
+    return p_v
 
 
 # Replace 'SECRET_KEY' with your team's secret key (Will be sent over email)
@@ -84,6 +100,6 @@ if __name__ == "__main__":
     initial_vector = get_overfit_vector(Secret_key)
     population = genarate_population(initial_vector,10)
     print(get_population_errors(population))
-    p_per = fitness_population(population)
+    p_per,p_newv = fitness_population(population)
     print(p_per)
     v = submit(Secret_key,initial_vector)
