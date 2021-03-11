@@ -62,21 +62,21 @@ def get_population_errors(population_vector):
 
 def fitness_population(population_vector):
     population_errors = get_population_errors(population_vector)
-    normal_error = population_errors[:,0] * (1/3) + population_errors[:,1] *(2/3)
+    normal_error = population_errors[:,0] * (2/3) + population_errors[:,1] *(1/3)
     population_inverse = np.reciprocal(normal_error+1)
     new_population = storebest_10(population_vector,population_errors,population_inverse)
     return new_population
 
 def storebest_10(p_v,p_e,p_per):
     global B10_V,B10_E,Generations,cur_generation
-    if cur_generation!=0:
-        percents = np.concatenate((Generations[cur_generation]["vectors_percent"],p_per))
-        vectors =  np.concatenate((Generations[cur_generation]["vectors"],p_v))
-        errors = np.concatenate((Generations[cur_generation]["vectors_error"],p_e))
-    else:
-        percents = p_per
-        vectors = p_v
-        errors = p_e
+    #if cur_generation!=0:
+    percents = np.concatenate((Generations[cur_generation]["vectors_percent"],p_per))
+    vectors =  np.concatenate((Generations[cur_generation]["vectors"],p_v))
+    errors = np.concatenate((Generations[cur_generation]["vectors_error"],p_e))
+    # else:
+    #     percents = p_per
+    #     vectors = p_v
+    #     errors = p_e
     index_p = np.argsort(percents)
     vectors = vectors[index_p[::-1]]
     errors = errors[index_p[::-1]]
@@ -97,7 +97,7 @@ def storebest_10(p_v,p_e,p_per):
 
     B10_V = vectors[0:10]
     B10_E = errors[0:10]
-    name = "./output4/generations"+str(cur_generation)
+    name = "./output6/generations"+str(cur_generation)
     with open(name+".json",'w+') as file:
         temp = {"vectors":Generations[cur_generation]['vectors'].tolist(),
             "vectors_error":Generations[cur_generation]['vectors_error'].tolist(),
@@ -141,7 +141,9 @@ def mutation(p_vector):
             #print(place)
             num_muiltple = uniform(-2,2)
             temp = p_vector[i][place] *num_muiltple
-            if temp<-10 or temp>10 or temp==0:
+            if abs(temp-p_vector[i][place]) < 0.1 :
+                temp += uniform(-2,2)
+            if temp<-10 or temp>10 :
                 temp = uniform(-10,10)
             p_vector[i][place] =temp
     return p_vector
@@ -175,17 +177,21 @@ def get_new_generation():
 
 # Replace 'SECRET_KEY' with your team's secret key (Will be sent over email)
 if __name__ == "__main__":
-    initial_vector = get_overfit_vector(Secret_key)
-    population = genarate_population(initial_vector,MAX_POPULATION)
+    #initial_vector = get_overfit_vector(Secret_key)
+    #population = genarate_population(initial_vector,MAX_POPULATION)
     #print(get_population_errors(population))
-    new_p = population
-    old_p = np.array([])
+    with open('output5/generations30.json','r') as file:
+        data = json.load(file)
+    Generations[cur_generation]['vectors'] = np.array(data['vectors'])
+    Generations[cur_generation]['vectors_error'] = np.array(data['vectors_error'])
+    Generations[cur_generation]['vectors_percent'] = np.array(data['vectors_percent'])
+
     for _ in range(0,30):
-        old_p = fitness_population(new_p)
-        #print(old_p)
         new_p = get_new_generation()
-    p_newv = fitness_population(new_p)
-    # print(B10_V)
-    # print(B10_E)
-    # print(B10_V.shape)
+        #print(old_p)
+        old_p = fitness_population(new_p)
+    #p_newv = fitness_population(new_p)
+    print(B10_V)
+    print(B10_E)
+    print(B10_V.shape)
     submit(Secret_key,list(B10_V[0]))
